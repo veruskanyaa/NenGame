@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hunter × Hunter: Nen Dungeon</title>
+</head>
+
+<body>
+  <h1>Hunter × Hunter: Nen Dungeon</h1>
+  <p>Open the browser developer console, then click Start Game. <br> Press F12 Or Inspect and Go to Console</p>
+  <button id="startButton">Start Game</button>
+
+  <!-- Load files in dependency order. -->
+  <script src="src/items/Item.js"></script>
+  <script src="src/items/Inventory.js"></script>
+  <script src="src/characters/Enemy.js"></script>
+  <script src="src/characters/Player.js"></script>
+  <script src="src/world/Room.js"></script>
+  <script src="src/world/Dungeon.js"></script>
+  <script src="src/combat/CombatSystem.js"></script>
+  <script src="src/game/Game.js"></script>
+  <script src="src/main.js"></script>
+</body>
+
+</html>
