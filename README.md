@@ -1,36 +1,74 @@
-# Hunter × Hunter: Nen Dungeon
+<div align="center">
 
-A web-based dungeon crawler (HTML + CSS + JavaScript, no frameworks and no databases), rebuilt from our Java console version so it has real visuals and a clear player guide for our WST-HCI & IM class.
+# HUNTER × HUNTER: NEN DUNGEON
 
-## How to Run
-1. Open `index.html` in any browser (double-click it).
-2. Read **How to Play** on the title screen.
-3. Click **Start Game**.
+```
+ ╔══════════════════════════════════════════╗
+ ║   . . .  THE HUNTER EXAM BEGINS . . .    ║
+ ║   8 ROOMS · 1 LICENSE · 1 GUARDIAN       ║
+ ╚══════════════════════════════════════════╝
+```
 
-No developer console or `prompt()` needed anymore — everything happens on screen.
+**A turn-based dungeon crawler in pure HTML + CSS + JavaScript.**
+**No frameworks. No database. No game engine. Just the browser.**
 
-## What changed from the console version (teacher feedback applied)
-- Full on-screen UI: title screen, Hunter creation, HUD bars, dungeon minimap, room panel, battle arena, win/lose screens.
-- **How to Play** guide (rules, goal, actions) so players are never lost.
-- HCI principles applied: consistent layout, clear feedback (colored event log + HP/XP bars), constraints (buttons only enable when valid), and no hidden console dependency.
-- Same logic classes kept (`Player`, `Enemy`, `Room`, `Dungeon`, `Item`, `Inventory`, `CombatSystem`, `Game`) so the documentation tables still match.
+` retro ` ` 3 colors only ` ` no prompts ` ` HCI-designed UI `
 
-## Documentation map
-- `documentation/00_Team_Defense_Plan.md` — who presents what + HCI talking points
-- `documentation/Master_Visuals/03_Web_UI_Overview.md` — the concept and design decisions
-- `documentation/Master_Visuals/04_Code_Guide.md` — every class/file explained
-- `documentation/Master_Visuals/05_Flowcharts.md` — flowcharts (mermaid, renders on GitHub)
-- `documentation/Master_Visuals/06_Mechanics_Reference.md` — all formulas and balance numbers
-- `documentation/Master_Visuals/07_Image_Sprites_Guide.md` — how to add portraits to characters
-- Member folders (`Member1_GameFlow` .. `Member5_Items`) — per-member cheat sheets
+Based on the **Nen system** from Hunter × Hunter — rebuild of our original
+Java console version, upgraded with a full visual interface for our
+**WST-HCI & IM** class.
 
-## Assignment concepts still demonstrated
-- Variables: `let` and `const`
-- Conditionals: `if / else` and `switch`
-- Loops: `while` and `forEach`
-- Functions/methods: reusable methods across classes
-- Arrays and objects: rooms, items, enemies, inventory
-- Higher-order functions: `map()`, `filter()`, `reduce()`, `some()`, `findIndex()`
-- OOP: classes with constructors and methods
-- I/O: DOM input (buttons, text field) and on-screen output (no `prompt()`)
-- Clean code: separated files, clear responsibilities
+</div>
+
+---
+
+## The Mission
+
+Clear every dungeon room, claim the **Hunter License Key**, defeat the
+**Elite Nen Guardian**, and escape alive. HP 0 = exam failed.
+
+- Choose 1 of 6 Nen types (Enhancement, Emission, Transmutation, Conjuration, Manipulation, Specialization)
+- Explore rooms for enemies, treasure and hidden bonus gold
+- Turn-based combat: Normal Attack / Nen Attack / Defend / Potion / Run
+- Nen Focus system: activating Nen costs charges, and its boost fades when the battle ends — no infinite buff stacking
+- 9 hand-made dungeon rooms with a live minimap
+
+## Run it (0 setup)
+
+1. Clone or download this repo
+2. Double-click `index.html`
+3. Read **How to Play** on the title screen, then start
+
+## What's inside
+
+```text
+index.html   -> all screens (title, guide, setup, dungeon, battle, endings)
+style.css    -> the whole 3-color Game Boy theme
+src/
+  ui/UI.js              -> the only file allowed to touch the DOM
+  game/Game.js          -> overall flow, exploration, portals, win/lose
+  combat/CombatSystem.js-> turn-based battle engine
+  characters/Player.js  -> hunter stats, XP/levels, Nen aura
+  characters/Enemy.js   -> enemies (+ ASCII portraits)
+  world/Room.js  world/Dungeon.js -> the 9-stage dungeon
+  items/Item.js  items/Inventory.js -> loot system
+documentation/          -> concept, flowcharts (mermaid), formulas, defense plans
+```
+
+## Team
+
+| Member | Focus |
+|---|---|
+| Veruska Inot | Game flow & screens (`Game.js`, `main.js`) |
+| Kheara Larisma | Player system (`Player.js`) |
+| Yasmin Alimoren | Combat engine (`Enemy.js`, `CombatSystem.js`) |
+| Raven Berrame | Dungeon & rooms (`Room.js`, `Dungeon.js`) |
+| James Paran | Items + UI renderer (`Item.js`, `Inventory.js`, `UI.js`) |
+
+> Cebu Eastern College · College of Information Technology · 2nd year Sec 6
+
+---
+
+<div align="center">
+<em>Built for the class project. The Hunter License is earned in code.</em>
+</div>
