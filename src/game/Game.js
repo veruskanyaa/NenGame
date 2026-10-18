@@ -1,276 +1,192 @@
 // Controls the overall game flow and connects the other systems together.
 class Game {
-  constructor() {
+  constructor(ui) {
     this.gameRunning = false;
     this.bossDefeated = false;
     this.player = null;
     this.dungeon = new Dungeon();
     this.combat = null;
+    this.ui = ui;
+    this.selectedNen = "Enhancement";
   }
 
   start() {
     this.gameRunning = true;
-    this.showWelcome();
-
-    const playerName = this.getPlayerName();
-    const nenType = this.chooseNenType();
-    this.player = new Player(playerName, nenType);
-    this.combat = new CombatSystem(this.player, this);
-
-    console.log("\n========================================");
-    console.log(`Welcome, ${this.player.name}!`);
-    console.log(`Nen Type: ${this.player.nenType}`);
-    console.log("Your Hunter Exam begins now!");
-    console.log("========================================");
-
-    this.dungeon.showRoomNames();
-    console.log(`Total enemy gold available: ${this.dungeon.getTotalEnemyGold()}`);
-    this.gameLoop();
+    this.bossDefeated = false;
+    this.dungeon = new Dungeon();
+    this.ui.show("setup");
+    this.ui.buildNenCards(name => this.selectedNen = name);
+    document.getElementById("btnBegin").disabled = false;
+    document.getElementById("btnBegin").textContent = "Begin the Hunter Exam";
   }
 
-  showWelcome() {
-    console.log("================================================");
-    console.log("         HUNTER × HUNTER: NEN DUNGEON");
-    console.log("================================================");
-    console.log("Explore the dungeon, master your Nen,");
-    console.log("defeat enemies, collect items, and escape.");
-    console.log("MISSION:");
-    console.log("1. Explore the dungeon.");
-    console.log("2. Defeat dangerous enemies.");
-    console.log("3. Collect useful items.");
-    console.log("4. Obtain the Hunter License Key.");
-    console.log("5. Defeat the final guardian.");
-    console.log("6. Escape through the final door.");
+  begin() {
+    const name = this.ui.getName();
+    this.player = new Player(name, this.selectedNen);
+    this.combat = new CombatSystem(this.player, this.ui, this);
+    this.ui.closeModals();
+    this.ui.show("game");
+    this.ui.clearLog();
+
+    this.ui.log([
+      `Welcome, ${this.player.name}! Nen Type: ${this.player.nenType}.`,
+      "Your Hunter Exam begins now!",
+      "MISSION: clear every room, claim the Hunter License Key, defeat the Elite Nen Guardian, and escape."
+    ], "system");
+
+    this.refresh();
   }
 
-  getPlayerName() {
-    const name = prompt("Enter your Hunter name:");
-    return name && name.trim() ? name.trim() : "Unknown Hunter";
-  }
+  refresh() {
+    this.ui.renderHud(this.player);
+    this.ui.renderMinimap(this.dungeon);
+    this.ui.renderRoom(this.dungeon, this.player);
 
-  chooseNenType() {
-    const types = [
-      "Enhancement",
-      "Emission",
-      "Transmutation",
-      "Conjuration",
-      "Manipulation",
-      "Specialization"
-    ];
-
-    while (true) {
-      console.log("\n1. Enhancement");
-      console.log("2. Emission");
-      console.log("3. Transmutation");
-      console.log("4. Conjuration");
-      console.log("5. Manipulation");
-      console.log("6. Specialization");
-
-      const choice = prompt("Choose your Nen type (1-6):");
-      if (choice === null) return "Enhancement";
-
-      const index = Number(choice) - 1;
-      if (index >= 0 && index < types.length) return types[index];
-      console.log("> Invalid choice. Please choose 1-6.");
-    }
-  }
-
-  showMenu() {
-    console.log("\n=============== ACTIONS ===============");
-    console.log("1. Explore");
-    console.log("2. Fight");
-    console.log("3. Defend");
-    console.log("4. Use Item");
-    console.log("5. Check Status");
-    console.log("6. Use Nen");
-    console.log("7. Check Map");
-    console.log("8. Enter Next Room Portal");
-    console.log("9. Exit Game");
-    console.log("========================================");
-  }
-
-  gameLoop() {
-    while (this.gameRunning) {
-      this.dungeon.showRoom();
-      this.showMenu();
-
-      const choice = prompt("Choose an action (1-9):");
-      if (choice === null) {
-        this.gameRunning = false;
-        break;
-      }
-
-      switch (choice.trim()) {
-        case "1": this.explore(); break;
-        case "2": this.combat.fight(this.dungeon.getCurrentRoom().enemy); break;
-        case "3": this.defend(); break;
-        case "4": this.useItem(); break;
-        case "5": this.player.showStatus(); break;
-        case "6": this.player.useNen(); break;
-        case "7": this.dungeon.showMap(); break;
-        case "8": this.useNextRoomPortal(); break;
-        case "9":
-          console.log("\nThanks for playing, Hunter!");
-          this.gameRunning = false;
-          break;
-        default:
-          console.log("\nInvalid choice. Please choose 1-9.");
-      }
-
-      if (this.gameRunning && this.dungeon.isAtFinalRoom()) {
-        if (this.checkExit()) this.gameRunning = false;
-      }
-
-      if (this.gameRunning) this.showNextRoomPortal();
-    }
+    const room = this.dungeon.getCurrentRoom();
+    const portalReady = this.dungeon.portalAvailable();
+    document.getElementById("btnFight").disabled = !(room.enemy && room.enemy.isAlive());
+    document.getElementById("btnExplore").disabled = room.visited;
+    document.getElementById("btnUseNen").disabled = this.player.nenCharges <= 0;
+    document.getElementById("btnNextRoom").disabled = !portalReady;
   }
 
   explore() {
+    this.ui.setActionsLocked(true);
     const room = this.dungeon.getCurrentRoom();
 
     if (room.visited) {
-      console.log("\n> You already explored this room.");
+      this.ui.log("You already explored this room.", "system");
+      this.ui.setActionsLocked(false);
       return;
     }
-
     room.visited = true;
 
-    if (room.enemy) {
-      console.log("\n> ENCOUNTER!");
-      console.log(`A ${room.enemy.name} appears!`);
-    } else if (room.item && !room.itemCollected) {
-      console.log("\n> TREASURE FOUND!");
-      console.log(`You found: ${room.item.name}`);
+    if (room.enemy && room.enemy.isAlive()) {
+      this.ui.log([`ENCOUNTER! A ${room.enemy.name} appears!`], "bad");
+    } else if (room.item) {
+      this.ui.log([`TREASURE FOUND! You obtained: ${room.item.name}`], "gold");
       this.player.inventory.add(room.item);
       room.itemCollected = true;
-
       if (room.item.type === "heal") {
         this.player.potions++;
-        console.log(`Potion count increased to ${this.player.potions}.`);
+        this.ui.log("Potion count increased.", "good");
       }
     } else {
-      console.log("\n> You search the room...");
-      console.log("The area is empty, but the path continues.");
+      this.ui.log(["You search the room... The area is empty, but the path continues."], "system");
     }
 
+    this.maybeBonusGold();
+    this.ui.setActionsLocked(false);
+    this.refresh();
+  }
+
+  maybeBonusGold() {
     if (Math.floor(Math.random() * 100) < 25) {
       const bonusGold = Math.floor(Math.random() * 16) + 5;
       this.player.gold += bonusGold;
-      console.log(`> Bonus discovery! You found ${bonusGold} gold.`);
+      this.ui.log(`Bonus discovery! You found ${bonusGold} gold.`, "gold");
     }
   }
 
-  defend() {
-    this.player.defending = true;
-    console.log("\nYou are guarding yourself.");
-    console.log("The next enemy attack will deal half damage.");
+  useItem(item, index) {
+    if (item.name === "Recovery Drink") {
+      if (!this.usePotion()) return;
+    } else if (item.name === "Hunter Blade") {
+      this.player.attack += 10;
+      this.player.inventory.removeAt(index);
+      this.ui.log("Hunter Blade equipped! Attack +10.", "good");
+    } else if (item.name === "Hunter License Key") {
+      this.ui.log("This key unlocks the final exit.", "system");
+    } else {
+      return;
+    }
+    this.refresh();
   }
 
   usePotion() {
     if (this.player.potions <= 0) {
-      console.log("\nYou have no Recovery Drinks.");
+      this.ui.log("You have no Recovery Drinks.", "bad");
       return false;
     }
     if (this.player.hp === this.player.maxHp) {
-      console.log("\nYour HP is already full.");
+      this.ui.log("Your HP is already full.", "system");
       return false;
     }
 
     this.player.potions--;
     this.player.heal(30);
     this.player.inventory.removeOne("Recovery Drink");
-    console.log("You used a Recovery Drink.");
+    this.ui.log("You used a Recovery Drink.", "good");
     return true;
   }
 
-  useItem() {
-    const inventory = this.player.inventory;
-    if (inventory.isEmpty()) {
-      console.log("\nYour inventory is empty.");
+  useNen() {
+    if (this.player.nenCharges <= 0) {
+      this.ui.log("Your Nen Focus is spent. Clear rooms to restore it.", "bad");
       return;
     }
-
-    console.log("\n================ INVENTORY ================");
-    inventory.items.forEach((item, index) => console.log(`${index + 1}. ${item.name}`));
-    console.log("===========================================");
-
-    const raw = prompt("Choose an item number:");
-    if (raw === null) return;
-    const index = Number(raw) - 1;
-    const item = inventory.get(index);
-
-    if (!item) {
-      console.log("Invalid item.");
-      return;
-    }
-
-    if (item.name === "Recovery Drink") {
-      this.usePotion();
-    } else if (item.name === "Hunter Blade") {
-      this.player.attack += 10;
-      inventory.removeAt(index);
-      console.log("\nHunter Blade equipped! Attack +10.");
-    } else if (item.name === "Hunter License Key") {
-      console.log("\nThis key unlocks the final exit.");
-    } else {
-      console.log("This item cannot be used right now.");
-    }
+    this.ui.setActionsLocked(true);
+    this.player.nenCharges--;
+    const before = { attack: this.player.attack, nenPower: this.player.nenPower };
+    const message = this.player.useNen();
+    const dA = this.player.attack - before.attack;
+    const dN = this.player.nenPower - before.nenPower;
+    const parts = [];
+    if (dA > 0) parts.push(`Attack +${dA}`);
+    if (dN > 0) parts.push(`Nen Power +${dN}`);
+    this.ui.log([message, `Nen Focus: ${this.player.nenCharges}/${this.player.maxCharges}`], "system");
+    this.ui.setActionsLocked(false);
+    this.refresh();
   }
 
-  showNextRoomPortal() {
-    if (this.dungeon.portalAvailable()) {
-      console.log("\n========================================");
-      console.log("          PORTAL UNLOCKED!");
-      console.log("========================================");
-      console.log(`Next Room: ${this.dungeon.rooms[this.dungeon.currentRoom + 1].name}`);
-    }
+  openItems() {
+    this.ui.openItems(this.player.inventory, (item, index) => this.useItem(item, index));
   }
 
   useNextRoomPortal() {
     const room = this.dungeon.getCurrentRoom();
-    if (!this.dungeon.portalAvailable()) {
-      if (!room.visited) console.log("\nExplore this room first.");
-      else if (room.enemy && room.enemy.isAlive()) console.log(`\nDefeat ${room.enemy.name} first.`);
-      else console.log("\nThere is no next-room portal here.");
+    if (this.dungeon.portalAvailable()) {
+      this.dungeon.moveNext();
+      this.ui.log(`You step into the Nen Portal and arrive at ${this.dungeon.getCurrentRoom().name}.`, "enter");
+      if (this.player.nenCharges < this.player.maxCharges) {
+        this.player.nenCharges++;
+        this.ui.log(`Nen Focus restored: ${this.player.nenCharges}/${this.player.maxCharges}.`, "good");
+      }
+      this.refresh();
       return;
     }
 
-    console.log("\nYou step into the Nen Portal...");
-    this.dungeon.moveNext();
-    this.dungeon.showRoom();
+    if (!room.visited) this.ui.log("Explore this room first.", "system");
+    else if (room.enemy && room.enemy.isAlive()) this.ui.log(`Defeat ${room.enemy.name} first.`, "bad");
+    else this.ui.log("There is no next-room portal here.", "system");
+  }
+
+  afterBattle() {
+    this.refresh();
+    if (this.dungeon.isAtFinalRoom()) this.checkExit();
   }
 
   checkExit() {
-    if (!this.dungeon.isAtFinalRoom()) return false;
+    if (!this.dungeon.isAtFinalRoom()) return;
 
     if (!this.player.inventory.has("Hunter License Key")) {
-      console.log("\nThe final door is locked. You need the Hunter License Key.");
-      return false;
+      this.ui.log("The final door is locked. You need the Hunter License Key.", "bad");
+      return;
     }
-
     if (!this.bossDefeated) {
-      console.log("\nThe final gate is still protected. Defeat the Elite Nen Guardian first.");
-      return false;
+      this.ui.log("The final gate is still protected. Defeat the Elite Nen Guardian first.", "bad");
+      return;
     }
-
-    console.log("\n==============================================");
-    console.log("          HUNTER EXAM COMPLETE!");
-    console.log("==============================================");
-    console.log(`Congratulations, ${this.player.name}!`);
-    console.log(`Final Level: ${this.player.level}`);
-    console.log(`Final Gold : ${this.player.gold}`);
-    console.log("==============================================");
-    return true;
+    this.ui.showEnd(true, this.player);
   }
 
   gameOver() {
-    console.log("\n========================================");
-    console.log("               GAME OVER");
-    console.log("========================================");
-    console.log("Your HP reached 0.");
-    console.log(`Final Level: ${this.player.level}`);
-    console.log(`Hunter Reward: ${this.player.gold}`);
-    console.log("========================================");
-    this.gameRunning = false;
+    this.ui.hideBattle();
+    this.ui.showEnd(false, this.player);
+  }
+
+  quit() {
+    this.ui.log("Thanks for playing, Hunter!", "system");
+    this.ui.setActionsLocked(true);
   }
 }

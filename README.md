@@ -1,24 +1,32 @@
-# Hunter × Hunter: Nen Dungeon — JavaScript Version
+# Hunter × Hunter: Nen Dungeon
 
-This version was rebuilt in JavaScript and separated into multiple files so the code is easier to understand, explain, and defend as a group project.
+A web-based dungeon crawler (HTML + CSS + JavaScript, no frameworks and no databases), rebuilt from our Java console version so it has real visuals and a clear player guide for our WST-HCI & IM class.
 
-## How to run
-1. Open `index.html` in a browser.
-2. Open Developer Tools → Console.
+## How to Run
+1. Open `index.html` in any browser (double-click it).
+2. Read **How to Play** on the title screen.
 3. Click **Start Game**.
-4. The game uses `prompt()` for input and `console.log()` for output.
+
+No developer console or `prompt()` needed anymore — everything happens on screen.
+
+## What changed from the console version (teacher feedback applied)
+- Full on-screen UI: title screen, Hunter creation, HUD bars, dungeon minimap, room panel, battle arena, win/lose screens.
+- **How to Play** guide (rules, goal, actions) so players are never lost.
+- HCI principles applied: consistent layout, clear feedback (colored event log + HP/XP bars), constraints (buttons only enable when valid), and no hidden console dependency.
+- Same logic classes kept (`Player`, `Enemy`, `Room`, `Dungeon`, `Item`, `Inventory`, `CombatSystem`, `Game`) so the documentation tables still match.
 
 ## Folder structure
-- `src/` — actual JavaScript source code.
+- `src/` — JavaScript source (game logic + `src/ui/UI.js` renderer).
+- `style.css` — all visuals.
 - `documentation/` — explanations and visual guides for the five members.
 
-## Assignment concepts demonstrated
+## Assignment concepts still demonstrated
 - Variables: `let` and `const`
 - Conditionals: `if / else` and `switch`
 - Loops: `while` and `forEach`
-- Functions/methods: many reusable methods
+- Functions/methods: reusable methods across classes
 - Arrays and objects: rooms, items, enemies, inventory
-- Higher-order functions: `map()`, `filter()`, `reduce()`
+- Higher-order functions: `map()`, `filter()`, `reduce()`, `some()`, `findIndex()`
 - OOP: classes with constructors and methods
-- Input/output: `prompt()` and `console.log()`
-- Clean code: separated files, clear responsibilities, comments
+- I/O: DOM input (buttons, text field) and on-screen output (no `prompt()`)
+- Clean code: separated files, clear responsibilities

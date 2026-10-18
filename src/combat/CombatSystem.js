@@ -1,133 +1,180 @@
-// Handles battles between the Player and Enemy objects.
+// Handles turn-based battles between the Player and an Enemy.
 class CombatSystem {
-  constructor(player, game) {
+  constructor(player, ui, game) {
     this.player = player;
+    this.ui = ui;
     this.game = game;
+    this.enemy = null;
+    this.busy = false;
   }
 
-  fight(enemy) {
-    if (!enemy) {
-      console.log("\nThere is no enemy here.");
-      return;
-    }
+  startBattle(enemy) {
+    if (!enemy || !enemy.isAlive()) return;
 
-    if (!enemy.isAlive()) {
-      console.log("\n> The enemy has already been defeated.");
-      return;
-    }
+    this.enemy = enemy;
+    this.busy = false;
+    this.player.defending = false;
+    this.ui.lockGame(true);
+    const dungeon = this.game.dungeon;
+    const roomLabel = `${dungeon.getCurrentRoom().name} (Room ${dungeon.currentRoom + 1}/${dungeon.rooms.length})`;
+    this.ui.showBattle(this.player, enemy, roomLabel);
+    this.ui.log([
+      "BATTLE START!",
+      `A wild ${enemy.name} appears! (${enemy.hp}/${enemy.maxHp} HP)`
+    ], "bad", "bLog");
+    this.refreshControls();
+  }
 
-    console.log("\n========================================");
-    console.log("             BATTLE START!");
-    console.log("========================================");
-    console.log(`Enemy: ${enemy.name}`);
+  refreshControls() {
+    this.ui.setBattleLocked(this.busy);
+    this.ui.setPotionEnabled(this.player.potions > 0 && !this.busy);
+  }
 
-    while (enemy.isAlive() && this.player.hp > 0) {
-      console.log("\n----------------------------------------");
-      console.log(`YOUR HP : ${this.player.hp}/${this.player.maxHp}`);
-      console.log(`ENEMY HP: ${enemy.hp}/${enemy.maxHp}`);
-      console.log("----------------------------------------");
-      console.log("1. Normal Attack");
-      console.log("2. Nen Attack");
-      console.log("3. Defend");
-      console.log("4. Use Potion");
-      console.log("5. Run");
+  playerAction(action) {
+    if (this.busy || !this.enemy || !this.enemy.isAlive()) return;
 
-      const choice = prompt("Battle action (1-5):");
-      if (choice === null) return;
-
-      let playerActed = false;
-
-      switch (choice.trim()) {
-        case "1":
-          this.normalAttack(enemy);
-          playerActed = true;
-          break;
-        case "2":
-          this.nenAttack(enemy);
-          playerActed = true;
-          break;
-        case "3":
-          this.player.defending = true;
-          console.log("> You take a defensive stance.");
-          playerActed = true;
-          break;
-        case "4":
-          playerActed = this.game.usePotion();
-          break;
-        case "5":
-          console.log("> You escaped the battle!");
+    switch (action) {
+      case "normal":
+        this.normalAttack();
+        break;
+      case "nen":
+        this.nenAttack();
+        break;
+      case "defend":
+        this.player.defending = true;
+        this.ui.log("You take a defensive stance. (Half incoming damage)", "good", "bLog");
+        break;
+      case "potion":
+        if (!this.game.usePotion()) {
+          this.refreshControls();
           return;
-        default:
-          console.log("> Invalid battle action.");
-      }
-
-      if (playerActed && enemy.isAlive()) {
-        this.enemyTurn(enemy);
-      }
+        }
+        this.ui.log(`HP now ${this.player.hp}/${this.player.maxHp}.`, "good", "bLog");
+        break;
+      case "run":
+        this.escape();
+        return;
     }
 
-    if (this.player.hp <= 0) {
-      this.game.gameOver();
-      return;
-    }
+    this.ui.renderBattleStats(this.player, this.enemy);
 
-    if (!enemy.isAlive()) {
-      console.log("\n========================================");
-      console.log("           ENEMY DEFEATED!");
-      console.log("========================================");
-      console.log(`You defeated ${enemy.name}!`);
-      this.player.gold += enemy.gold;
-      this.player.gainXP(enemy.xp);
-      console.log(`> Hunter Reward: +${enemy.gold} gold`);
-
-      if (enemy.name === "Elite Nen Guardian") {
-        this.game.bossDefeated = true;
-        console.log("\n> THE FINAL GUARDIAN HAS FALLEN!");
-      }
+    if (this.enemy.isAlive()) {
+      this.busy = true;
+      this.refreshControls();
+      setTimeout(() => {
+        this.enemyTurn();
+        this.afterPlayerTurn();
+      }, 450);
+    } else {
+      this.busy = false;
+      this.finishBattle();
     }
   }
 
-  normalAttack(enemy) {
-    const hitChance = Math.floor(Math.random() * 100);
-    if (hitChance < 75) {
-      let damage = Math.floor(Math.random() * 11) + this.player.attack - 5;
+  normalAttack() {
+    const enemy = this.enemy;
+    if (Math.floor(Math.random() * 100) < 75) {
+      let damage = Math.floor(Math.random() * 11) + this.player.getEffectiveAttack() - 5;
+      if (damage < 1) damage = 1;
       if (Math.floor(Math.random() * 100) < 15) {
         damage *= 2;
-        console.log("\n> CRITICAL HIT!");
-      } else {
-        console.log("\n> HIT!");
+        this.ui.log("CRITICAL HIT!", "bad", "bLog");
       }
       enemy.takeDamage(damage);
-      console.log(`You dealt ${damage} damage!`);
+      this.ui.flash("enemy");
+      this.ui.log(`You dealt ${damage} damage!`, "good", "bLog");
     } else {
-      console.log("\n> MISS! Your attack missed!");
+      this.ui.log("MISS! Your attack missed!", "system", "bLog");
     }
   }
 
-  nenAttack(enemy) {
-    const hitChance = Math.floor(Math.random() * 100);
-    if (hitChance < 85) {
-      let damage = Math.floor(this.player.nenPower / 2) + Math.floor(Math.random() * 11);
+  nenAttack() {
+    const enemy = this.enemy;
+    if (Math.floor(Math.random() * 100) < 85) {
+      let damage = Math.floor(this.player.getEffectiveNenPower() / 2) + Math.floor(Math.random() * 11);
       if (Math.floor(Math.random() * 100) < 20) {
-        damage += Math.floor(this.player.nenPower / 2);
-        console.log("\n> NEN CRITICAL!");
-      } else {
-        console.log("\n> NEN HIT!");
+        damage += Math.floor(this.player.getEffectiveNenPower() / 2);
+        this.ui.log("NEN CRITICAL!", "bad", "bLog");
       }
       enemy.takeDamage(damage);
-      console.log(`Your Nen attack dealt ${damage} damage!`);
+      this.ui.flash("enemy");
+      this.ui.log(`Your Nen attack dealt ${damage} damage!`, "good", "bLog");
     } else {
-      console.log("\n> Your Nen attack missed!");
+      this.ui.log("Your Nen attack missed!", "system", "bLog");
     }
   }
 
-  enemyTurn(enemy) {
+  enemyTurn() {
+    const enemy = this.enemy;
     let damage = enemy.attack + Math.floor(Math.random() * 6);
     if (this.player.nenType === "Manipulation" && Math.floor(Math.random() * 100) < 35) {
       damage = Math.floor(damage / 2);
-      console.log("\n> Your Manipulation Nen weakens the enemy!");
+      this.ui.log("Your Manipulation Nen weakens the enemy!", "good", "bLog");
     }
-    console.log(`\nMonster ${enemy.name} attacks!`);
-    this.player.takeDamage(damage);
+    this.ui.log(`${enemy.name} attacks!`, "bad", "bLog");
+    const result = this.player.takeDamage(damage);
+    if (result.defended) {
+      this.ui.log("You defended; damage halved!", "good", "bLog");
+    }
+    this.ui.flash("player");
+    this.ui.log(`You received ${result.damage} damage. (HP ${this.player.hp}/${this.player.maxHp})`, "bad", "bLog");
+    this.ui.renderBattleStats(this.player, enemy);
+  }
+
+  afterPlayerTurn() {
+    if (this.player.hp <= 0) {
+      this.busy = false;
+      this.game.gameOver();
+      return;
+    }
+    this.busy = false;
+    this.refreshControls();
+    this.ui.renderBattleStats(this.player, this.enemy);
+    if (!this.enemy.isAlive()) this.finishBattle();
+  }
+
+  finishBattle() {
+    const enemy = this.enemy;
+    this.ui.log("ENEMY DEFEATED!", "good", "bLog");
+    this.ui.log(`You defeated ${enemy.name}!`, "good", "bLog");
+    this.player.gold += enemy.gold;
+    this.ui.log(`Hunter Reward: +${enemy.gold} gold`, "gold", "bLog");
+
+    const beforeLevel = this.player.level;
+    this.player.gainXP(enemy.xp);
+    if (this.player.level > beforeLevel) {
+      this.ui.log([
+        `LEVEL UP! You are now Level ${this.player.level}!`,
+        "Max HP +10 · Attack +3 · Nen Power +5 · HP fully restored!"
+      ], "gold", "bLog");
+    }
+
+    if (enemy.name === "Elite Nen Guardian") {
+      this.game.bossDefeated = true;
+      this.ui.log("THE FINAL GUARDIAN HAS FALLEN!", "good", "bLog");
+    }
+
+    this.player.resetAura();
+    this.ui.log("Your aura subsides.", "system", "bLog");
+
+    setTimeout(() => {
+      this.ui.hideBattle();
+      this.ui.lockGame(false);
+      this.enemy = null;
+      this.busy = false;
+      this.game.afterBattle();
+    }, 900);
+  }
+
+  escape() {
+    this.busy = false;
+    this.player.resetAura();
+    this.ui.log("You escaped the battle! Your aura subsides.", "system", "bLog");
+    setTimeout(() => {
+      this.ui.hideBattle();
+      this.ui.lockGame(false);
+      this.enemy = null;
+      this.game.afterBattle();
+    }, 500);
   }
 }

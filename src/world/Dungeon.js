@@ -10,7 +10,9 @@ class Dungeon {
       new Room(
         "Chimera Ant Room",
         "A Chimera Ant Soldier blocks the path.",
-        new Enemy("Chimera Ant Soldier", 45, 10, 25, 30)
+        new Enemy("Chimera Ant Soldier", 45, 10, 25, 30,
+          " \\/ |\n (oo)\n>-||-<\n /  \\"
+        )
       ),
       new Room(
         "Treasure Room",
@@ -21,7 +23,9 @@ class Dungeon {
       new Room(
         "Phantom Beast Room",
         "A powerful Phantom Beast watches you from the shadows.",
-        new Enemy("Phantom Beast", 65, 15, 40, 45)
+        new Enemy("Phantom Beast", 65, 15, 40, 45,
+          " /\\_/\\\n( o o )\n ( ~ )\n(d) (b)"
+        )
       ),
       new Room(
         "Nen Training Room",
@@ -44,7 +48,9 @@ class Dungeon {
       new Room(
         "Final Gate",
         "A giant gate stands before you. Something powerful guards it.",
-        new Enemy("Elite Nen Guardian", 100, 20, 100, 80)
+        new Enemy("Elite Nen Guardian", 90, 17, 100, 80,
+          "  /\\n /==\\\n (##)\n={++}=\n /||\\"
+        )
       ),
       new Room(
         "Exit",
@@ -78,38 +84,26 @@ class Dungeon {
 
   showRoom() {
     const room = this.getCurrentRoom();
-    console.log("\n========================================");
-    console.log("             CURRENT ROOM");
-    console.log("========================================");
-    console.log(`Location: ${room.name}`);
-    console.log(room.description);
-    if (room.enemy && room.enemy.isAlive()) {
-      console.log(`> Enemy detected: ${room.enemy.name}`);
-    }
-    console.log("========================================");
+    return { name: room.name, description: room.description };
   }
 
   showRoomNames() {
     // Higher-order function: map()
-    const names = this.rooms.map((room, index) => `${index + 1}. ${room.name}`);
-    console.log("\n============== DUNGEON ROOMS ==============");
-    names.forEach(name => console.log(name));
-    console.log("============================================");
+    return this.rooms.map((room, index) => `${index + 1}. ${room.name}`);
   }
 
   showMap() {
-    // filter() is used to count cleared/visited rooms.
     const visitedCount = this.rooms.filter(room => room.visited).length;
-
-    console.log("\n================ DUNGEON MAP ================");
-    this.rooms.forEach((room, index) => {
-      let marker = " ? UNKNOWN";
-      if (index === this.currentRoom) marker = " ← YOU ARE HERE";
-      else if (room.visited) marker = " ✓ CLEARED";
-      console.log(`${index + 1}. ${room.name}${marker}`);
-    });
-    console.log(`Visited rooms: ${visitedCount}/${this.rooms.length}`);
-    console.log("==============================================");
+    // Higher-order function: map()
+    return {
+      rows: this.rooms.map((room, index) => ({
+        index: index + 1,
+        name: room.visited ? room.name : "UNKNOWN",
+        marker: index === this.currentRoom ? "YOU ARE HERE" : (room.visited ? "CLEARED" : "UNKNOWN")
+      })),
+      visitedCount,
+      total: this.rooms.length
+    };
   }
 
   getTotalEnemyGold() {

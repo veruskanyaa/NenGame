@@ -5,12 +5,158 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hunter × Hunter: Nen Dungeon</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <h1>Hunter × Hunter: Nen Dungeon</h1>
-  <p>Open the browser developer console, then click Start Game. <br> Press F12 Or Inspect and Go to Console</p>
-  <button id="startButton">Start Game</button>
+  <!-- TITLE SCREEN -->
+  <section id="screen-title" class="screen active">
+    <h1 class="game-title">HUNTER × HUNTER<br><span>NEN DUNGEON</span></h1>
+    <p class="tagline">Explore the dungeon. Master your Nen. Earn your Hunter License.</p>
+    <div class="menu-buttons">
+      <button id="btnStartGame" class="btn btn-primary">Start Game</button>
+      <button id="btnHowToPlay" class="btn">How to Play</button>
+    </div>
+  </section>
+
+  <!-- HOW TO PLAY MODAL -->
+  <div id="modal-guide" class="modal hidden">
+    <div class="modal-box">
+      <h2>How to Play</h2>
+      <ol class="guide-list">
+        <li><b>Goal:</b> Clear 8 dungeon rooms, get the <b>Hunter License Key</b>, defeat the <b>Elite Nen Guardian</b>, then escape through the Exit.</li>
+        <li><b>Explore</b> each room to reveal enemies, items, or bonus gold.</li>
+        <li>When an enemy is present, press <b>Fight</b> and pick an action: Normal Attack, Nen Attack, Defend, Use Potion, or Run.</li>
+        <li>Winning battles gives you <b>gold</b> and <b>XP</b>. Level up to raise HP, Attack, and Nen Power.</li>
+        <li>A room must be explored (and its enemy beaten) before the <b>Next Room</b> portal unlocks.</li>
+        <li>Use <b>Nen</b> to boost your stats, and <b>Items</b> to heal or equip gear.</li>
+        <li>You lose if your HP reaches 0.</li>
+      </ol>
+      <button id="btnCloseGuide" class="btn btn-primary">Got it</button>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <section id="screen-setup" class="screen">
+    <h2 class="screen-heading">Create Your Hunter</h2>
+    <div class="setup-card">
+      <label for="inputName">Hunter Name</label>
+      <input id="inputName" type="text" maxlength="16" placeholder="e.g. Veruska" />
+      <label>Choose Your Nen Type</label>
+      <div id="nenTypes" class="nen-grid"></div>
+      <button id="btnBegin" class="btn btn-primary btn-wide">Begin the Hunter Exam</button>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="screen-game" class="screen">
+    <!-- HUD -->
+    <header class="hud">
+      <div class="hud-left">
+        <span id="hudName" class="hud-name">Hunter</span>
+        <span id="hudNen" class="badge">Enhancement</span>
+        <span id="hudLevel" class="badge">Lv 1</span>
+      </div>
+      <div class="hud-bars">
+        <div class="bar"><div id="barHp" class="bar-fill hp"></div><span id="barHpText">100/100</span></div>
+        <div class="bar"><div id="barXp" class="bar-fill xp"></div><span id="barXpText">XP 0/50</span></div>
+      </div>
+      <div class="hud-right">
+        <span class="stat">GLD <b id="hudGold">0</b></span>
+        <span class="stat">POT <b id="hudPotions">1</b></span>
+        <span class="stat">ATK <b id="hudAttack">20</b></span>
+        <span class="stat">NEN <b id="hudNenPower">30</b></span>
+        <span class="stat" title="Nen Focus charges">NCH <b id="hudNenCharge">1/3</b></span>
+      </div>
+    </header>
+
+    <!-- MINIMAP -->
+    <nav id="minimap" class="minimap"></nav>
+
+    <!-- ROOM VIEW -->
+    <main class="room-panel">
+      <div class="room-info">
+        <span id="roomTag" class="room-tag">ROOM</span>
+        <h2 id="roomName">Room Name</h2>
+        <p id="roomDesc">Description</p>
+        <div id="roomStatus" class="room-status"></div>
+      </div>
+      <div class="actions">
+        <button id="btnExplore" class="action-btn">Explore</button>
+        <button id="btnFight" class="action-btn danger">Fight</button>
+        <button id="btnUseNen" class="action-btn">Use Nen</button>
+        <button id="btnUseItem" class="action-btn">Items</button>
+        <button id="btnStatus" class="action-btn">Status</button>
+        <button id="btnNextRoom" class="action-btn primary">Next Room</button>
+        <button id="btnQuit" class="action-btn small danger-outline">Quit</button>
+      </div>
+    </main>
+
+    <!-- EVENT / FEEDBACK LOG -->
+    <section class="log-panel">
+      <div id="gameLog"></div>
+    </section>
+  </section>
+
+  <!-- BATTLE OVERLAY -->
+  <div id="screen-battle" class="hidden battle">
+    <div class="battle-room" id="bRoomName">Room</div>
+    <div class="battle-arena">
+      <div class="fighter player-side">
+        <div class="portrait" id="portraitPlayer">YOU</div>
+        <div class="fighter-name" id="bPlayerName">You</div>
+        <div class="bar big"><div id="bBarHp" class="bar-fill hp"></div><span id="bBarHpText">100/100</span></div>
+      </div>
+      <div class="vs blink">VS</div>
+      <div class="fighter enemy-side">
+        <div class="portrait" id="portraitEnemy">FOE</div>
+        <div class="fighter-name" id="bEnemyName">Enemy</div>
+        <div class="bar big"><div id="bBarEnemy" class="bar-fill enemy"></div><span id="bBarEnemyText">0/0</span></div>
+      </div>
+    </div>
+    <div id="bLog" class="log-panel battle-log"></div>
+    <div class="battle-actions">
+      <button id="bNormal" class="action-btn">Normal Attack</button>
+      <button id="bNen" class="action-btn">Nen Attack</button>
+      <button id="bDefend" class="action-btn">Defend</button>
+      <button id="bPotion" class="action-btn">Use Potion</button>
+      <button id="bRun" class="action-btn small danger-outline">Run</button>
+    </div>
+  </div>
+
+  <!-- ITEM / STATUS / MAP MODALS -->
+  <div id="modal-items" class="modal hidden">
+    <div class="modal-box">
+      <h2>Inventory</h2>
+      <ul id="itemList" class="item-list"></ul>
+      <button id="btnCloseItems" class="btn">Close</button>
+    </div>
+  </div>
+
+  <div id="modal-status" class="modal hidden">
+    <div class="modal-box">
+      <h2>Hunter Status</h2>
+      <div id="statusBody"></div>
+      <button id="btnCloseStatus" class="btn">Close</button>
+    </div>
+  </div>
+
+  <!-- END OVERLAYS -->
+  <div id="screen-win" class="hidden end-screen">
+    <div class="end-box win">
+      <h1>HUNTER EXAM COMPLETE!</h1>
+      <p id="winText"></p>
+      <button id="btnRestartWin" class="btn btn-primary">Play Again</button>
+    </div>
+  </div>
+
+  <div id="screen-lose" class="hidden end-screen">
+    <div class="end-box lose">
+      <h1>GAME OVER</h1>
+      <p id="loseText"></p>
+      <button id="btnRestartLose" class="btn btn-primary">Try Again</button>
+    </div>
+  </div>
 
   <!-- Load files in dependency order. -->
   <script src="src/items/Item.js"></script>
@@ -19,6 +165,7 @@
   <script src="src/characters/Player.js"></script>
   <script src="src/world/Room.js"></script>
   <script src="src/world/Dungeon.js"></script>
+  <script src="src/ui/UI.js"></script>
   <script src="src/combat/CombatSystem.js"></script>
   <script src="src/game/Game.js"></script>
   <script src="src/main.js"></script>
