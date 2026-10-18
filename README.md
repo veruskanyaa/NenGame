@@ -15,10 +15,14 @@ No developer console or `prompt()` needed anymore — everything happens on scre
 - HCI principles applied: consistent layout, clear feedback (colored event log + HP/XP bars), constraints (buttons only enable when valid), and no hidden console dependency.
 - Same logic classes kept (`Player`, `Enemy`, `Room`, `Dungeon`, `Item`, `Inventory`, `CombatSystem`, `Game`) so the documentation tables still match.
 
-## Folder structure
-- `src/` — JavaScript source (game logic + `src/ui/UI.js` renderer).
-- `style.css` — all visuals.
-- `documentation/` — explanations and visual guides for the five members.
+## Documentation map
+- `documentation/00_Team_Defense_Plan.md` — who presents what + HCI talking points
+- `documentation/Master_Visuals/03_Web_UI_Overview.md` — the concept and design decisions
+- `documentation/Master_Visuals/04_Code_Guide.md` — every class/file explained
+- `documentation/Master_Visuals/05_Flowcharts.md` — flowcharts (mermaid, renders on GitHub)
+- `documentation/Master_Visuals/06_Mechanics_Reference.md` — all formulas and balance numbers
+- `documentation/Master_Visuals/07_Image_Sprites_Guide.md` — how to add portraits to characters
+- Member folders (`Member1_GameFlow` .. `Member5_Items`) — per-member cheat sheets
 
 ## Assignment concepts still demonstrated
 - Variables: `let` and `const`

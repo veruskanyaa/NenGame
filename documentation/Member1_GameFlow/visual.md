@@ -1,24 +1,28 @@
-# Member 1 — Game Flow Visual
+# Member 1 — Game Flow Visual (web version)
 
 ```text
-main.js
+main.js  (creates UI + Game, connects EVERY button press)
   |
   v
-new Game()
+Game
+  |
+  +--> start()        -> Setup screen (name + 6 Nen cards)
+  +--> begin()        -> creates Player + CombatSystem, enters game screen
   |
   v
-start()
+refresh()  <-- called after every action
   |
-  +--> welcome
-  +--> player setup
-  +--> dungeon setup
+  +--> renderHud / renderMinimap / renderRoom / button lock states
   |
-  v
-gameLoop()
-  |
-  +--> menu choice
-  +--> calls the correct system
+  +--> explore()            -> discover enemy / item / nothing
+  +--> useNen()             -> spends Nen Focus charge, grants temporary aura
+  +--> openItems()          -> item modal (uses useItem/usePotion)
+  +--> useNextRoomPortal()  -> cleared-room gate; +1 Focus on enter
+  +--> checkExit()          -> at Exit: needs License Key + boss down -> Win
   |
   v
-win / game over / exit
+win / game over / quit
 ```
+
+Key switch from the console version: no `while (gameRunning)` + `prompt()` loop —
+the browser event loop replaces it; every click runs exactly one Game method.
